@@ -14,7 +14,7 @@ import subprocess
 __author__ = 'Palfans'
 
 GIT_REPO = [
-    ['origin', 'master', 'git@github.com:palfans/blog.git'],
+    ['origin', 'code', 'git@github.com:palfans/palfans.github.io.git'],
 ]
 
 DEPLOY_REPO = [
@@ -66,8 +66,17 @@ def git_pull(repos):
             shell=True)
 
 
+def get_workdir(args):
+    if args.work_dir:
+        work_dir = args.work_dir
+    else:
+        work_dir = os.path.dirname(os.path.abspath(__file__))
+
+    return work_dir
+
+
 def compose(args):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = get_workdir(args)
 
     with ChDir(current_dir):
         git_init(current_dir, GIT_REPO)
@@ -85,67 +94,66 @@ def compose(args):
         img_path = current_dir + '\\static\\img'
 
         article_path = current_dir + '\\content\\post\\' + article_title + '.md'
-        subprocess.call('mklink /D {0} {1}'.format(link_path, img_path), shell=True)
+        subprocess.call(
+            'mklink /D {0} {1}'.format(link_path, img_path), shell=True)
         subprocess.call('pip install pywin32', shell=True)
         win32api.ShellExecute(0, 'open', article_path, '', '', 1)
 
 
 def deploy(args):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = get_workdir(args)
     deploy_dir = os.path.join(current_dir, 'public')
 
-    with ChDir(deploy_dir):
-        git_init(deploy_dir, DEPLOY_REPO)
-        git_pull(DEPLOY_REPO)
-
     with ChDir(current_dir):
-        if args.base_url:
-            base_url = args.base_url
-        else:
-            base_url = BASE_URL
-
-        subprocess.call(
-                'hugo -v --baseURL=' + base_url,
-                shell=True)
-        
         if len(GIT_REPO) > 0:
-            
             subprocess.call('git add --all', shell=True)
             subprocess.call(
                 'git commit -a -m "{0}"'.format('upt: new article'),
                 shell=True)
             for repo in GIT_REPO:
                 if args.test:
-                    print('git push {0} {1}'.format(
-                        repo[0], repo[1]))
+                    print('git push {0} {1}'.format(repo[0], repo[1]))
                 else:
                     subprocess.call(
-                        'git push {0} {1}'.format(
-                            repo[0], repo[1]),
+                        'git push {0} {1}'.format(repo[0], repo[1]),
                         shell=True)
 
-    with ChDir(deploy_dir):                
-        if len(DEPLOY_REPO) > 0:
-            
-            subprocess.call('git add --all', shell=True)
-            subprocess.call(
-                'git commit -a -m "{0}"'.format('upt: new article'),
-                shell=True)
-            for repo in DEPLOY_REPO:
-                if args.test:
-                    print('git push {0} {1}'.format(
-                        repo[0], repo[1]))
-                else:
-                    subprocess.call(
-                        'git push {0} {1}'.format(
-                            repo[0], repo[1]),
-                        shell=True)
+    if args.manual:
+        if args.base_url:
+            base_url = args.base_url
+        else:
+            base_url = BASE_URL
+
+        subprocess.call('hugo -v --baseURL=' + base_url, shell=True)
+        
+        with ChDir(deploy_dir):
+            git_init(deploy_dir, DEPLOY_REPO)
+            git_pull(DEPLOY_REPO)
+
+            if len(DEPLOY_REPO) > 0:
+
+                subprocess.call('git add --all', shell=True)
+                subprocess.call(
+                    'git commit -a -m "{0}"'.format('upt: new article'),
+                    shell=True)
+                for repo in DEPLOY_REPO:
+                    if args.test:
+                        print('git push {0} {1}'.format(repo[0], repo[1]))
+                    else:
+                        subprocess.call(
+                            'git push {0} {1}'.format(repo[0], repo[1]),
+                            shell=True)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Compose article and deploy Hugo')
     parser.add_argument('type', help='compose or deploy')
+    parser.add_argument(
+        '-d',
+        dest='work_dir',
+        action='store',
+        help='set work directory, current path if empty')
     parser.add_argument(
         '-t', dest='test', action='store_true', help='for test')
     parser.add_argument('-v', action='version', version='%(prog)s 1.0')
@@ -156,6 +164,8 @@ if __name__ == '__main__':
         '-a', dest='article_title', action='store', help='set article title')
     deploy_grp.add_argument(
         '-b', dest='base_url', action='store', help='set base url')
+    deploy_grp.add_argument(
+        '-m', dest='manual', action='store_true', help='deploy manually')
     args = parser.parse_args()
 
     if args.type in ['compose']:
