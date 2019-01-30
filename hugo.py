@@ -59,11 +59,9 @@ def git_pull(repos):
             'git reset --hard {0}/{1}'.format(repos[0][0], repos[0][1]),
             shell=True)
         subprocess.call('git clean -df', shell=True)
-        subprocess.call('git submodule init', shell=True)
-        subprocess.call('git submodule update', shell=True)
-        subprocess.call(
-            'git submodule foreach git pull --rebase origin master',
-            shell=True)
+        # subprocess.call('git submodule init', shell=True)
+        # subprocess.call('git submodule update', shell=True)
+        subprocess.call('git submodule foreach git pull', shell=True)
 
 
 def get_workdir(args):
@@ -125,7 +123,7 @@ def deploy(args):
             base_url = BASE_URL
 
         subprocess.call('hugo -v --baseURL=' + base_url, shell=True)
-        
+
         with ChDir(deploy_dir):
             git_init(deploy_dir, DEPLOY_REPO)
             git_pull(DEPLOY_REPO)
