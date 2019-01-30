@@ -49,6 +49,8 @@ def git_init(dir, repos):
                 subprocess.call(
                     'git remote add {0} {1}'.format(repo[0], repo[2]),
                     shell=True)
+        subprocess.call('git submodule init', shell=True)
+        subprocess.call('git submodule update', shell=True)
 
 
 def git_pull(repos):
@@ -59,8 +61,6 @@ def git_pull(repos):
             'git reset --hard {0}/{1}'.format(repos[0][0], repos[0][1]),
             shell=True)
         subprocess.call('git clean -df', shell=True)
-        # subprocess.call('git submodule init', shell=True)
-        # subprocess.call('git submodule update', shell=True)
         subprocess.call('git submodule foreach git pull', shell=True)
 
 
